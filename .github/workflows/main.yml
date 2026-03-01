@@ -1,0 +1,30 @@
+name: main
+on:
+  push:
+    branches: [main]
+  schedule:
+  - cron: '15 8 * * *'
+
+jobs:
+  build:
+    name: main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v5
+      id: setup-python
+      with:
+        python-version: 3.14
+    - uses: astral-sh/setup-uv@v7
+    # Install https://github.com/34j/pre-commit-mirror-maker:feat/nonlinear-increment
+    - run: uv tool install git+https://github.com/34j/pre-commit-mirror-maker.git@feat/nonlinear-increment
+    - run: git config --global user.name 'Github Actions'
+    - run: git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+    - run: pre-commit-mirror . --language=node --package-name=prettier --types=text --entry='prettier --write --ignore-unknown' --id=prettier
+    - run: |
+        git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY
+        git push origin HEAD:refs/heads/main --tags
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
